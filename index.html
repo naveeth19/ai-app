@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pocket Pharmacist</title>
+    <link rel="stylesheet" href="style.css"> </head>
+<body>
+    <img id="logo" src="Medical Care.gif"></img>
+    <div id="main">
+     <input type="file" id="prescriptionImage">
+     <button id="submitButton">Submit</button>
+    <div id="apiResponse"></div>
+    </div>
+    <script type="importmap">
+        {
+          "imports": {
+            "@google/generative-ai": "https://esm.run/@google/generative-ai"
+          }
+        }
+      </script>
+    <script type="module" >
+            import { GoogleGenerativeAI } from "@google/generative-ai";
+// Replace "YOUR_API_KEY" with your actual API key
+const API_KEY = "AIzaSyC1sIUelhqJQDqNisqumofefg-ScB9YgdQ";
+
+async function fileToGenerativePart(file) {
+    const base64EncodedDataPromise = new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(file);
+    });
+    return {
+        inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
+    };
+}
+
+async function analyzePrescription() {
+    const model = new GoogleGenerativeAI(API_KEY).getGenerativeModel({
+        model: "gemini-pro-vision" 
+    });
+    const fileInputEl = document.querySelector("#prescriptionImage");
+    const imageParts = await Promise.all([...fileInputEl.files].map(fileToGenerativePart));
+    const prompt ="You are an POCKET PHARMACIST. You are a genius in medicine and biology.You will be provided with an image of an prescription to help the user understand the prescription better you will state the tablet name with usage and description about it with its dosage if given and side effects.Make sure the response is given in a user freindly well aligned manner. I want you to do this for all the medicines in the prescription. This answer will be directly pasted in html.So do use html styling tags to make it look good. "
+    // Assuming the prescription image itself is the prompt
+    const result = await model.generateContent([prompt,imageParts]); 
+    const response = await result.response;
+    const text = response.text();
+
+    document.getElementById("apiResponse").innerHTML = text;
+}
+
+document.getElementById("submitButton").addEventListener("click", analyzePrescription);
+
+    </script> 
+</body>
+</html>
